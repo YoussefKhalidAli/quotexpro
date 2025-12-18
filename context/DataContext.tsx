@@ -14,7 +14,7 @@ import {
   Product,
 } from "../types";
 
-const API_BASE = "https://finca-back-production.up.railway.app/api";
+const API_BASE = process.env.REACT_APP_API_BASE;
 
 interface DataContextType {
   customers: Customer[];
@@ -53,8 +53,8 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | null>(null);
 
-// Data is now persisted on server API. Frontend keeps local state and syncs via REST.
-
+// Data is now persisted on server API. Frontend keeps local state and syncs via REST. Company data is stored localy
+const COMPANY_STORAGE_KEY = "company_settings";
 const defaultCompany: CompanySettings = {
   name: "Acme Corp",
   address: "123 Business Rd, Tech City",
@@ -89,25 +89,28 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [c, v, p, i, e, co] = await Promise.all([
+        const [c, v, p, i, e /* co */] = await Promise.all([
           fetch(`${API_BASE}/customers`).then((r) => r.json()),
           fetch(`${API_BASE}/vendors`).then((r) => r.json()),
           fetch(`${API_BASE}/products`).then((r) => r.json()),
           fetch(`${API_BASE}/invoices`).then((r) => r.json()),
           fetch(`${API_BASE}/expenses`).then((r) => r.json()),
-          fetch(`${API_BASE}/company`).then((r) => r.json()),
         ]);
 
-        // Map _id -> id for all collections
-        const mapId = (arr: any[]) =>
-          (arr || []).map((item) => ({ ...item, id: item._id }));
+        setCustomers(c);
+        setVendors(v);
+        setProducts(p);
+        setInvoices(i);
+        setExpenses(e);
 
-        setCustomers(mapId(c));
-        setVendors(mapId(v));
-        setProducts(mapId(p));
-        setInvoices(mapId(i));
-        setExpenses(mapId(e));
-        if (co && Object.keys(co).length) setCompany(co);
+        const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
+        if (!raw) setCompany(defaultCompany);
+        else {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object" && "name" in parsed) {
+            setCompany(parsed as CompanySettings);
+          }
+        }
       } catch (err) {
         console.error("Failed to load data from API", err);
       }
@@ -238,10 +241,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
       });
       const created = await handleError(res);
 
-      setInvoices((prev) => [
-        ...prev,
-        { ...(created._doc as Invoice), id: created.id },
-      ]);
+      setInvoices((prev) => [...prev, created]);
 
       return created.id;
     } catch (err) {
@@ -308,15 +308,11 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
   // --- Settings ---
   const updateCompany = async (data: CompanySettings) => {
     try {
-      const res = await fetch(`${API_BASE}/company`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const updated = await handleError(res);
-      if (updated) setCompany(updated);
+      localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(data));
+
+      setCompany(data);
     } catch (err) {
-      console.error(err);
+      console.error("Failed to save company settings", err);
     }
   };
 
