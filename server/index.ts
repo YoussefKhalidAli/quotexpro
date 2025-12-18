@@ -1,14 +1,14 @@
 // src/index.ts
 import express, { Request, Response } from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 
 // Import routes
-import customersRouter from "./routes/customers.ts";
-import vendorsRouter from "./routes/vendors.ts";
-import productsRouter from "./routes/products.ts";
-import invoicesRouter from "./routes/invoices.ts";
-import expensesRouter from "./routes/expenses.ts";
+import customersRouter from "./routes/customers";
+import vendorsRouter from "./routes/vendors";
+import productsRouter from "./routes/products";
+import invoicesRouter from "./routes/invoices";
+import expensesRouter from "./routes/expenses";
 
 dotenv.config();
 

@@ -1,13 +1,12 @@
-// src/routes/customers.ts
-import { Router } from "express";
-import db from "../firebase.ts"; // your initialized Firestore
-import type { Customer } from "../models/customer.ts";
+import { Router, Request, Response } from "express";
+import db from "../firebase";
+import type { Customer } from "../models/customer";
 
 const router = Router();
 const collection = db.collection("customers");
 
 // Get all customers
-router.get("/", async (_req, res) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
     const snapshot = await collection.get();
     const customers = snapshot.docs.map(
@@ -21,7 +20,7 @@ router.get("/", async (_req, res) => {
 });
 
 // Create new customer
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const docRef = await collection.add(req.body);
     const doc = await docRef.get();
@@ -33,7 +32,7 @@ router.post("/", async (req, res) => {
 });
 
 // Get single customer by ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req: Request, res: Response) => {
   try {
     const doc = await collection.doc(req.params.id).get();
     if (!doc.exists) return res.sendStatus(404);
@@ -45,7 +44,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // Update existing customer
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req: Request, res: Response) => {
   try {
     const docRef = collection.doc(req.params.id);
     const doc = await docRef.get();
@@ -61,7 +60,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // Delete customer
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     const docRef = collection.doc(req.params.id);
     const doc = await docRef.get();

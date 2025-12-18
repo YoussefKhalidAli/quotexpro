@@ -1,11 +1,11 @@
-import { Router } from "express";
-import db from "../firebase.ts";
-import type { Expense } from "../models/expense.ts";
+import { Router, Request, Response } from "express";
+import db from "../firebase";
+import type { Expense } from "../models/expense";
 
 const router = Router();
 const collection = db.collection("expenses");
 
-router.get("/", async (_req, res) => {
+router.get("/", async (_req: Request, res: Response) => {
   try {
     const snapshot = await collection.get();
     const items = snapshot.docs.map(
@@ -18,7 +18,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const docRef = await collection.add(req.body);
     const doc = await docRef.get();
@@ -29,7 +29,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/:id", async (req, res) => {
+router.put("/:id", async (req: Request, res: Response) => {
   try {
     const docRef = collection.doc(req.params.id);
     await docRef.set(req.body, { merge: true });
@@ -41,7 +41,7 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req: Request, res: Response) => {
   try {
     await collection.doc(req.params.id).delete();
     res.sendStatus(204);
