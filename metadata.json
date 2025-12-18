@@ -1,0 +1,5 @@
+{
+  "name": "FinCashier",
+  "description": "A comprehensive financial management application for small businesses. Manage customers, vendors, invoices, quotations, and expenses with a robust dashboard and PDF generation capabilities.",
+  "requestFramePermissions": []
+}
