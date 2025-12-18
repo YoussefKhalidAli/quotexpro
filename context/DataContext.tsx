@@ -14,7 +14,7 @@ import {
   Product,
 } from "../types";
 
-const API_BASE = process.env.REACT_APP_API_BASE;
+const API_BASE = import.meta.env.VITE_APP_API_BASE;
 
 interface DataContextType {
   customers: Customer[];
