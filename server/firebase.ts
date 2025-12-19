@@ -1,19 +1,25 @@
-import admin from "firebase-admin";
+import { initializeApp, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 
-// Initialize app without credentials
-const app = admin.initializeApp({
-  projectId: "invoice-app", // just a name for local emulator
-});
+import * as dotenv from "dotenv";
+dotenv.config();
 
-const db = admin.firestore();
-
-// Connect to emulator
-if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-  process.env.FIRESTORE_EMULATOR_HOST = "localhost:9011";
-  db.settings({
-    host: "localhost:9011",
-    ssl: false,
-  });
+if (!process.env.FIREBASE_SERVICE_ACCOUNT) {
+  throw new Error(
+    "Missing FIREBASE_SERVICE_ACCOUNT env variable" +
+      process.env.FIREBASE_SERVICE_ACCOUNT
+  );
 }
 
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+const app = initializeApp({
+  credential: cert({
+    projectId: serviceAccount.project_id,
+    clientEmail: serviceAccount.client_email,
+    privateKey: serviceAccount.private_key.replace(/\\n/g, "\n"), // fix escaped newlines
+  }),
+});
+
+const db = getFirestore(app);
 export default db;
