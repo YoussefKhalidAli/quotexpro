@@ -115,7 +115,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
       }
     };
     load();
-  }, []);
+  }, [company]);
 
   // --- Customers ---
   const addCustomer = async (data: Omit<Customer, "id">) => {

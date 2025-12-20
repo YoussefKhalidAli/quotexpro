@@ -44,7 +44,7 @@ const Login = () => {
         <div className="mb-6">
           <label className="block text-sm font-medium mb-1">Password</label>
           <input
-            type="text"
+            type="password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
