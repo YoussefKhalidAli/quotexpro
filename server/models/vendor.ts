@@ -1,6 +1,7 @@
 // src/models/vendor.ts
 export interface Vendor {
   id?: string;
+  companyID: string;
   name: string;
   phone?: string;
   note?: string;
@@ -10,6 +11,7 @@ export interface Vendor {
 
 export const defaultVendor: Vendor = {
   name: "",
+  companyID: "",
   phone: "",
   note: "",
 };

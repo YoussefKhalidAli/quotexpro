@@ -1,16 +1,21 @@
 import { Router, Request, Response } from "express";
 import db from "../firebase";
 import type { Expense } from "../models/expense";
+import { auth, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 const collection = db.collection("expenses");
 
-router.get("/", async (_req: Request, res: Response) => {
+// --- Get all expenses for this company ---
+router.get("/", auth, async (req: AuthRequest, res: Response) => {
   try {
-    const snapshot = await collection.get();
+    const companyId = req.user!.companyId;
+
+    const snapshot = await collection.where("companyId", "==", companyId).get();
     const items = snapshot.docs.map(
       (doc) => ({ id: doc.id, ...doc.data() } as Expense)
     );
+
     res.json(items);
   } catch (err) {
     console.error(err);
@@ -18,10 +23,21 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-router.post("/", async (req: Request, res: Response) => {
+// --- Create a new expense for this company ---
+router.post("/", auth, async (req: AuthRequest, res: Response) => {
   try {
-    const docRef = await collection.add(req.body);
+    const companyId = req.user!.companyId;
+
+    const data = {
+      ...req.body,
+      companyId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    const docRef = await collection.add(data);
     const doc = await docRef.get();
+
     res.status(201).json({ id: doc.id, ...doc.data() } as Expense);
   } catch (err) {
     console.error(err);
@@ -29,10 +45,24 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/:id", async (req: Request, res: Response) => {
+// --- Update an expense (only if it belongs to this company) ---
+router.put("/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
+    const companyId = req.user!.companyId;
     const docRef = collection.doc(req.params.id);
-    await docRef.set(req.body, { merge: true });
+    const doc = await docRef.get();
+
+    if (!doc.exists)
+      return res.status(404).json({ error: "Expense not found" });
+
+    if (doc.data()?.companyId !== companyId)
+      return res.status(403).json({ error: "Forbidden" });
+
+    await docRef.set(
+      { ...req.body, updatedAt: new Date().toISOString() },
+      { merge: true }
+    );
+
     const updatedDoc = await docRef.get();
     res.json({ id: updatedDoc.id, ...updatedDoc.data() } as Expense);
   } catch (err) {
@@ -41,9 +71,20 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.delete("/:id", async (req: Request, res: Response) => {
+// --- Delete an expense (only if it belongs to this company) ---
+router.delete("/:id", auth, async (req: AuthRequest, res: Response) => {
   try {
-    await collection.doc(req.params.id).delete();
+    const companyId = req.user!.companyId;
+    const docRef = collection.doc(req.params.id);
+    const doc = await docRef.get();
+
+    if (!doc.exists)
+      return res.status(404).json({ error: "Expense not found" });
+
+    if (doc.data()?.companyId !== companyId)
+      return res.status(403).json({ error: "Forbidden" });
+
+    await docRef.delete();
     res.sendStatus(204);
   } catch (err) {
     console.error(err);

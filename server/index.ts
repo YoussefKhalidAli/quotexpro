@@ -7,6 +7,7 @@ import vendorsRouter from "./routes/vendors";
 import productsRouter from "./routes/products";
 import invoicesRouter from "./routes/invoices";
 import expensesRouter from "./routes/expenses";
+import companiesRouter from "./routes/company";
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use("/api/vendors", vendorsRouter);
 app.use("/api/products", productsRouter);
 app.use("/api/invoices", invoicesRouter);
 app.use("/api/expenses", expensesRouter);
+app.use("/api/companies", companiesRouter);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

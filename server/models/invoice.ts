@@ -10,6 +10,7 @@ export interface InvoiceItem {
 
 export interface Invoice {
   id?: string;
+  companyID: string;
   customerId: string;
   customerName?: string;
   customerDetails?: Record<string, any>;
@@ -27,6 +28,7 @@ export interface Invoice {
 
 export const defaultInvoice: Invoice = {
   customerId: "",
+  companyID: "",
   items: [],
   subtotal: 0,
   taxRate: 0,

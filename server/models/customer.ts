@@ -1,6 +1,7 @@
 // src/models/customer.ts
 export interface Customer {
   id?: string;
+  companyID: string;
   name: string;
   phone: string;
   email: string;
@@ -12,6 +13,7 @@ export interface Customer {
 export const defaultCustomer: Customer = {
   name: "",
   phone: "",
+  companyID: "",
   email: "",
   address: "",
 };

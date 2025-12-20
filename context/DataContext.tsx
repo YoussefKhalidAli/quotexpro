@@ -42,8 +42,10 @@ interface DataContextType {
   addExpense: (e: Omit<Expense, "id">) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
 
-  updateCompany: (c: CompanySettings) => Promise<void>;
-
+  addCompany: (c: CompanySettings) => Promise<void>;
+  updateCompany: (id: string, c: CompanySettings) => Promise<void>;
+  deleteCompany: (id: string, c: CompanySettings) => Promise<void>;
+  loginCompany: (email: string, taxId: string) => Promise<void>;
   // Bulk Import Helpers
   importData: (
     type: "customers" | "vendors" | "products" | "invoices",
@@ -53,29 +55,21 @@ interface DataContextType {
 
 const DataContext = createContext<DataContextType | null>(null);
 
-// Data is now persisted on server API. Frontend keeps local state and syncs via REST. Company data is stored localy
-const COMPANY_STORAGE_KEY = "company_settings";
-const defaultCompany: CompanySettings = {
-  name: "Acme Corp",
-  address: "123 Business Rd, Tech City",
-  phone: "+1 234 567 890",
-  email: "contact@acmecorp.com",
-  taxId: "TAX-12345678",
-  header: "INVOICE",
-  footer: "Thank you for your business. Please pay within 30 days.",
-  currency: "AED",
-  taxEnabled: false,
-  taxRate: 5,
-};
-
 export const DataProvider = ({ children }: { children?: ReactNode }) => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [company, setCompany] = useState<CompanySettings>(defaultCompany);
+  const [company, setCompany] = useState<CompanySettings>(
+    {} as CompanySettings
+  );
 
+  const token = localStorage.getItem("token");
+
+  const authHeaders = token
+    ? { "Content-Type": "application/json", Authorization: `Bearer ${token}` }
+    : { "Content-Type": "application/json" };
   // Helpers
   const handleError = async (res: Response) => {
     if (!res.ok) {
@@ -89,28 +83,33 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [c, v, p, i, e /* co */] = await Promise.all([
-          fetch(`${API_BASE}/customers`).then((r) => r.json()),
-          fetch(`${API_BASE}/vendors`).then((r) => r.json()),
-          fetch(`${API_BASE}/products`).then((r) => r.json()),
-          fetch(`${API_BASE}/invoices`).then((r) => r.json()),
-          fetch(`${API_BASE}/expenses`).then((r) => r.json()),
+        const [c, v, p, i, e, co] = await Promise.all([
+          fetch(`${API_BASE}/customers`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+          fetch(`${API_BASE}/vendors`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+          fetch(`${API_BASE}/products`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+          fetch(`${API_BASE}/invoices`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+          fetch(`${API_BASE}/expenses`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
+          fetch(`${API_BASE}/companies/me`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }).then((r) => r.json()),
         ]);
 
-        setCustomers(c);
-        setVendors(v);
-        setProducts(p);
-        setInvoices(i);
-        setExpenses(e);
-
-        const raw = localStorage.getItem(COMPANY_STORAGE_KEY);
-        if (!raw) setCompany(defaultCompany);
-        else {
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object" && "name" in parsed) {
-            setCompany(parsed as CompanySettings);
-          }
-        }
+        setCustomers(Array.isArray(c) ? c : []);
+        setVendors(Array.isArray(v) ? v : []);
+        setProducts(Array.isArray(p) ? p : []);
+        setInvoices(Array.isArray(i) ? i : []);
+        setExpenses(Array.isArray(e) ? e : []);
+        if (!co.error) setCompany(co);
       } catch (err) {
         console.error("Failed to load data from API", err);
       }
@@ -123,7 +122,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/customers`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const created = await handleError(res);
@@ -137,7 +136,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/customers/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const updated = await handleError(res);
@@ -153,6 +152,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/customers/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Delete failed");
       setCustomers((prev) => prev.filter((c) => c.id !== id));
@@ -166,7 +166,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/vendors`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const created = await handleError(res);
@@ -180,6 +180,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/vendors/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Delete failed");
       setVendors((prev) => prev.filter((v) => v.id !== id));
@@ -193,7 +194,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/products`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const created = await handleError(res);
@@ -207,7 +208,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/products/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const updated = await handleError(res);
@@ -223,6 +224,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/products/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Delete failed");
       setProducts((prev) => prev.filter((p) => p.id !== id));
@@ -236,13 +238,11 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/invoices`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const created = await handleError(res);
-
       setInvoices((prev) => [...prev, created]);
-
       return created.id;
     } catch (err) {
       console.error(err);
@@ -254,7 +254,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/invoices/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const updated = await handleError(res);
@@ -270,6 +270,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/invoices/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Delete failed");
       setInvoices((prev) => prev.filter((i) => i.id !== id));
@@ -283,7 +284,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/expenses`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders,
         body: JSON.stringify(data),
       });
       const created = await handleError(res);
@@ -297,6 +298,7 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     try {
       const res = await fetch(`${API_BASE}/expenses/${id}`, {
         method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Delete failed");
       setExpenses((prev) => prev.filter((e) => e.id !== id));
@@ -305,14 +307,62 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
     }
   };
 
-  // --- Settings ---
-  const updateCompany = async (data: CompanySettings) => {
+  // --- Company / Settings ---
+  const addCompany = async (data: CompanySettings) => {
     try {
-      localStorage.setItem(COMPANY_STORAGE_KEY, JSON.stringify(data));
-
-      setCompany(data);
+      const res = await fetch(`${API_BASE}/companies/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const created = await handleError(res);
+      localStorage.setItem("token", created.token);
+      setCompany(created.company);
+      return created.company.id;
     } catch (err) {
-      console.error("Failed to save company settings", err);
+      console.error(err);
+    }
+  };
+
+  const updateCompany = async (id: string, data: CompanySettings) => {
+    try {
+      const res = await fetch(`${API_BASE}/companies/me`, {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify(data),
+      });
+      const updated = await handleError(res);
+      setCompany(updated);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const deleteCompany = async (id: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/companies/me`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Delete failed");
+      setCompany(undefined);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loginCompany = async (email: string, password: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/companies/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await handleError(res);
+      setCompany(data.company);
+      localStorage.setItem("token", data.token);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -365,7 +415,10 @@ export const DataProvider = ({ children }: { children?: ReactNode }) => {
         deleteInvoice,
         addExpense,
         deleteExpense,
+        addCompany,
         updateCompany,
+        deleteCompany,
+        loginCompany,
         importData,
       }}
     >

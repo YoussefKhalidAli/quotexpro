@@ -1,18 +1,18 @@
-import React from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
-import { DataProvider } from './context/DataContext';
-import Layout from './components/Layout';
-import Dashboard from './pages/Dashboard';
-import Customers from './pages/Customers';
-import CustomerDetails from './pages/CustomerDetails';
-import Invoices from './pages/Invoices';
-import InvoiceEditor from './pages/InvoiceEditor';
-import InvoiceView from './pages/InvoiceView';
-import Expenses from './pages/Expenses';
-import Vendors from './pages/Vendors';
-import Products from './pages/Products';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import { DataProvider } from "./context/DataContext";
+import Layout from "./components/Layout";
+import Dashboard from "./pages/Dashboard";
+import Customers from "./pages/Customers";
+import CustomerDetails from "./pages/CustomerDetails";
+import Invoices from "./pages/Invoices";
+import InvoiceEditor from "./pages/InvoiceEditor";
+import InvoiceView from "./pages/InvoiceView";
+import Expenses from "./pages/Expenses";
+import Vendors from "./pages/Vendors";
+import Products from "./pages/Products";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
+import Login from "./pages/login";
 
 export default function App() {
   return (
@@ -32,6 +32,8 @@ export default function App() {
             <Route path="/products" element={<Products />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Settings />} />
           </Routes>
         </Layout>
       </Router>

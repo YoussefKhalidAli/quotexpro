@@ -29,7 +29,12 @@ export interface InvoiceItem {
   price: number;
 }
 
-export type InvoiceStatus = 'quotation' | 'approved' | 'invoiced' | 'paid' | 'completed';
+export type InvoiceStatus =
+  | "quotation"
+  | "approved"
+  | "invoiced"
+  | "paid"
+  | "completed";
 
 export interface Invoice {
   id: string;
@@ -38,13 +43,13 @@ export interface Invoice {
   customerDetails?: Customer; // Snapshot of full details at time of invoice
   items: InvoiceItem[];
   notes: string;
-  
+
   // Financials
   subtotal: number;
   taxRate: number; // Stored at creation time
   taxAmount: number;
   total: number;
-  
+
   status: InvoiceStatus;
   createdAt: string;
   dueDate?: string;
@@ -61,6 +66,7 @@ export interface Expense {
 }
 
 export interface CompanySettings {
+  id: string;
   name: string;
   address: string;
   phone: string;
@@ -69,7 +75,8 @@ export interface CompanySettings {
   header: string;
   footer: string;
   currency: string;
-  
+  password: string;
+
   // Tax Settings
   taxEnabled: boolean;
   taxRate: number; // Percentage, e.g. 5
