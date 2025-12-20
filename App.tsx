@@ -12,7 +12,7 @@ import Vendors from "./pages/Vendors";
 import Products from "./pages/Products";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
-import Login from "./pages/login";
+import Login from "./pages/Login";
 
 export default function App() {
   return (
